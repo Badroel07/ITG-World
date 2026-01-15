@@ -1,6 +1,10 @@
 ﻿import flash.display.MovieClip;
 import flash.display.Bitmap;
 import flash.system.Capabilities;
+import flash.text.TextField;
+import flash.text.TextFormat;
+import flash.text.TextFieldAutoSize;
+import flash.filters.GlowFilter;
 /*
 FlashRPG versi 0.1  16 Maret 2020
 Programmer : Wandah Wibawanto
@@ -96,6 +100,7 @@ var GUI_ready:Boolean = false;
 var hp_bar:MovieClip;
 var exp_bar:MovieClip;
 var popup:MovieClip;
+var door_hint_txt:TextField;
 var popup_item:MovieClip;
 var tittle_page:MovieClip;
 var gameover_page:MovieClip;
@@ -180,7 +185,17 @@ var suara_salah:String = "";
 var doorX:int = 0;
 var doorY:int = 0;
 var map_id:int = 1;
-var game_scale:int = 1;
+var game_scale:Number = 1;
+
+//fungsi untuk mengubah scale map secara global
+function set_scale_map(sc:Number):void{
+	game_scale = sc;
+	if (game){
+		game.scaleX = game_scale;
+		game.scaleY = game_scale;
+		center_screen();
+	}
+}
 
 //fungsi membaca tombol ditekan
 function keyDownFunction(event:KeyboardEvent):void {
@@ -304,8 +319,15 @@ function buat_level(map:Array, tileset:String):void{
 		game.scaleY = 2;
 	}
 	trace("scale = "+game_scale);
-	game.scaleX = game_scale;
-	game.scaleY = game_scale;
+	
+	// Set scale khusus untuk map tertentu
+	if (map_id == 8) {
+		game.scaleX = 2;
+		game.scaleY = 2;
+	} else {
+		game.scaleX = game_scale;
+		game.scaleY = game_scale;
+	}
 	peta = new MovieClip();
 	game.addChild(peta);
 	//menambahkan canvas
@@ -330,6 +352,7 @@ function buat_level(map:Array, tileset:String):void{
 	}else{
 		play_sound(suara_peta, 99);
 	}
+	setup_door_hint();
 }
 //gerakan karakter dengan menggunakan keyboard
 function loop_event(e:Event):void{	
@@ -358,6 +381,7 @@ function loop_event(e:Event):void{
 			if (just_talk == 0) collect_item();
 		}
 	}
+	check_door_hint();
 	if (just_talk > 0) just_talk--;
 	center_screen();
 }
@@ -531,6 +555,65 @@ function cek_pintu():void{
 		if (game_output == "android") remove_vk();
 	}
 }
+
+function setup_door_hint():void {
+	if (door_hint_txt == null) {
+		door_hint_txt = new TextField();
+		var fmt:TextFormat = new TextFormat();
+		fmt.size = 24;
+		fmt.color = 0xFFFFFF;
+		fmt.font = "Arial";
+		fmt.bold = true;
+		door_hint_txt.defaultTextFormat = fmt;
+		door_hint_txt.text = "Tekan Spasi untuk Masuk";
+		door_hint_txt.autoSize = TextFieldAutoSize.CENTER;
+		door_hint_txt.filters = [new GlowFilter(0x000000, 1, 4, 4, 10, 1)];
+		door_hint_txt.visible = false;
+		door_hint_txt.mouseEnabled = false;
+	}
+
+	addChild(door_hint_txt);
+	// Center horizontally, bottom area
+	door_hint_txt.x = (screen_w - door_hint_txt.width) / 2;
+	door_hint_txt.y = screen_h - 150;
+}
+
+function check_door_hint():void {
+	if (!door_hint_txt) return;
+	
+	if (!game_aktif) {
+		door_hint_txt.visible = false;
+		return;
+	}
+	
+	var px:int = Math.floor(char.x/t_size);
+	var py:int = Math.floor(char.y/t_size);
+	var ada_pintu:Boolean = false;
+	
+	var tx:int = px;
+	var ty:int = py;
+	
+	if (arah_karakter == 1) ty++;
+	else if (arah_karakter == 2) tx--;
+	else if (arah_karakter == 3) tx++;
+	else if (arah_karakter == 4) ty--;
+	
+	if (tx >= 0 && tx < map_active.length && ty >= 0 && ty < map_active[0].length) {
+		if (map_active[tx][ty][0] == 2) {
+			ada_pintu = true;
+		}
+	}
+	
+	
+	if (ada_pintu) {
+		if (door_hint_txt.parent != this) addChild(door_hint_txt);
+		setChildIndex(door_hint_txt, numChildren - 1);
+		door_hint_txt.visible = true;
+	} else {
+		door_hint_txt.visible = false;
+	}
+}
+
 function findDoor(newMap){
 	for (var i=0;i<newMap.length;i++){
 		for (var j=0;j<newMap[0].length;j++){
@@ -1301,6 +1384,7 @@ function setup_GUI():void{
 	add_hp_bar();
 	add_exp_bar();
 	add_gold_txt();
+	setup_door_hint();
 }
 
 function add_hp_bar():void{
@@ -2677,9 +2761,9 @@ function pindah_map(m_data:Array, t_name:String, cx:int, cy:int):void {
 	// 2. BUAT LEVEL BARU
 	buat_level(m_data, t_name);
 	
-	// 3. SKALA ULANG (Agar tetap zoom 3x)
-	game.scaleX = 3;
-	game.scaleY = 3;
+	// 3. SKALA ULANG (Agar tetap zoom sesuai global setting)
+	game.scaleX = game_scale;
+	game.scaleY = game_scale;
 	
 	// 4. MUNCULKAN KEMBALI KARAKTER
 	// Karena hapus_level menghapus semua anak di 'peta', kita harus addChild lagi
@@ -2690,6 +2774,15 @@ function pindah_map(m_data:Array, t_name:String, cx:int, cy:int):void {
 	char.py = cy;
 	char.x = cx * t_size;
 	char.y = cy * t_size;
+
+	// Scale karakter khusus Map 8 dan 10
+	if (map_id == 8 || map_id == 10){
+		char.scaleX = 0.8;
+		char.scaleY = 0.8;
+	} else {
+		char.scaleX = 0.5;
+		char.scaleY = 0.5;
+	}
 	
 	// Reset status aksi agar bisa jalan lagi
 	is_action = false;
