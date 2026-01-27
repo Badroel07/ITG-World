@@ -395,14 +395,140 @@ function cek_pintu():void{
 	}
 	if (ada_pintu){
 		if (door_id != 0){
-			old_x = px;
-			old_y = py;	
-			last_map = map_id;
-			map_id = door_id;
-			findDoor(this["map_"+door_id]);
+			var map_tujuan:Array = this["map_" + door_id];
+			var tileset_tujuan:String = "tileset_1"; // Default
+			var koordinatX:int = 10;
+			var koordinatY:int = 10;
+			trace("Sedang di Map: " + map_id + " Mau ke Map: " + door_id);
+
+			// Tentukan tileset berdasarkan nomor map
+
+				if (door_id == 1) {
+				tileset_tujuan = "tileset_1";
+				// Cek datang dari mana (last_map adalah map_id sebelum berubah)
+				if (map_id == 2) { 
+					koordinatX = 16;
+					koordinatY = 24;
+				} else if (map_id == 9) {
+					koordinatX = 18;
+					koordinatY = 7;
+				} else {
+					// Koordinat default map 1 jika bukan dari map 2 atau 9
+					koordinatX = 15;
+					koordinatY = 8;
+				}
+			} else if (door_id == 2) {
+				tileset_tujuan = "tileset_2";
+				if (map_id == 1) { 
+					koordinatX = 10;
+					koordinatY = 9;
+				} else if (map_id == 3) {
+					koordinatX = 21;
+					koordinatY = 5;
+				} else {
+					koordinatX = 9;
+					koordinatY = 10;
+				}
+				
+			} else if (door_id == 3) {
+				tileset_tujuan = "tileset_2";
+				if (map_id == 2) { 
+					koordinatX = 2;
+					koordinatY = 7;
+				} else if (map_id == 4) {
+					koordinatX = 8;
+					koordinatY = 8;
+				} else if (map_id == 5) {
+					koordinatX = 2;
+					koordinatY = 4;
+				} else {
+					koordinatX = 4;
+					koordinatY = 8;
+				} 
+			} else if (door_id == 4) {
+				tileset_tujuan = "tileset_2";
+				if (map_id == 3) { 
+					koordinatX = 1;
+					koordinatY = 8;
+				} else {
+					koordinatX = 1;
+					koordinatY = 4;
+				}  
+			} else if (door_id == 5) {
+				tileset_tujuan = "tileset_2";
+				if (map_id == 3) { 
+					koordinatX = 10;
+					koordinatY = 5;
+				} else if (map_id == 6) {
+					koordinatX = 16;
+					koordinatY = 5;
+				} else if (map_id == 7) {
+					koordinatX = 32;
+					koordinatY = 5;
+				} else if (map_id == 8) {
+					koordinatX = 37;
+					koordinatY = 5;
+				} else {
+					koordinatX = 15;
+					koordinatY = 6;
+				} 
+			} else if (door_id == 6) {
+				tileset_tujuan = "tileset_2";
+				if (map_id == 5) { 
+					koordinatX = 2;
+					koordinatY = 5;
+				} else {
+					koordinatX = 5;
+					koordinatY = 5;
+				} 
+			} else if (door_id == 7) {
+				tileset_tujuan = "tileset_2";
+				if (map_id == 5) { 
+					koordinatX = 2;
+					koordinatY = 5;
+				} else {
+					koordinatX = 5;
+					koordinatY = 5;
+				} 
+			} else if (door_id == 8) {
+				tileset_tujuan = "tileset_4";
+				if (map_id == 5) { 
+					koordinatX = 9;
+					koordinatY = 10;
+				} else {
+					koordinatX = 4;
+					koordinatY = 4;
+				} 
+			} else if (door_id == 9) {
+				tileset_tujuan = "tileset_1";
+				if (map_id == 1) { 
+					koordinatX = 27;
+					koordinatY = 11;
+				} else if (map_id == 10) {
+					koordinatX = 27;
+					koordinatY = 11;
+				} else {
+					koordinatX = 15;
+					koordinatY = 10;
+				}
+			} else if (door_id == 10) {
+				tileset_tujuan = "tileset_3";
+				if (map_id == 9) { 
+					koordinatX = 6;
+					koordinatY = 9;
+				} else {
+					koordinatX = 5;
+					koordinatY = 5;
+				} 
+			}
+			if (map_tujuan != null) {
+				// Masukkan variabel tileset_tujuan ke sini
+				map_id = door_id;
+				pindah_map(map_tujuan, tileset_tujuan, koordinatX, koordinatY);
+			}
 		}
+		
 		if (game_output == "android") remove_vk();
-		wipe_in();
 	}
 }
 function findDoor(newMap){
@@ -2538,4 +2664,46 @@ function move_stick(e:Event):void{
 function rotasi(x1:int, y1:int, x2:int, y2:int):Number{
 	var rad:Number =  -Math.atan2((x1 - x2), (y1 - y2)); 
 	return rad * 180 / Math.PI;
+}
+
+function pindah_map(m_data:Array, t_name:String, cx:int, cy:int):void {
+	game_aktif = false; // Matikan loop agar tidak error
+	
+	hapus_level(); // Membersihkan map lama
+	
+	// 1. UPDATE TILESET
+	tileset_name = t_name; // Set nama linkage tileset baru
+	
+	// 2. BUAT LEVEL BARU
+	buat_level(m_data, t_name);
+	
+	// 3. SKALA ULANG (Agar tetap zoom 3x)
+	game.scaleX = 3;
+	game.scaleY = 3;
+	
+	// 4. MUNCULKAN KEMBALI KARAKTER
+	// Karena hapus_level menghapus semua anak di 'peta', kita harus addChild lagi
+	peta.addChild(char); 
+	
+	// 5. ATUR POSISI KARAKTER
+	char.px = cx;
+	char.py = cy;
+	char.x = cx * t_size;
+	char.y = cy * t_size;
+	
+	// Reset status aksi agar bisa jalan lagi
+	is_action = false;
+	game_aktif = true; 
+	
+	trace("Pindah ke map baru dengan tileset: " + t_name);
+	trace("Door ID yang terbaca: " + door_id);
+}
+
+function hapus_level():void {
+	if (peta != null) {
+		// Menghapus semua tile dari canvas
+		while (canvas.numChildren > 0) canvas.removeChildAt(0);
+		// Menghapus semua item dari peta
+		while (peta.numChildren > 0) peta.removeChildAt(0);
+	}
 }
